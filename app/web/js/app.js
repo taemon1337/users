@@ -12,7 +12,13 @@
       var self = this;
       var headers = record._id ? { "If-Match": record._etag } : {};
       var data = {};
-      Object.keys(record).filter(function(k) { return !k.startsWith("_") });
+      Object.keys(record).filter(function(k) { return !k.startsWith("_") }).map(function(k) {
+        if(collection === 'groups' && ['members','managers'].indexOf(k) >= 0) {
+          data[k] = record[k].map(function(usr) { return typeof usr === 'object' ? usr._id : usr })
+        } else {
+          data[k] = record[k]
+        }
+      })
 
       var options = $.extend({}, {
         url: [self.base,collection,record._id].join('/').replace('//','/'),
@@ -52,8 +58,10 @@
         headers: headers
       }, overrides);
 
-      $.ajax(options).then(function(resp) { cb(self.parse(resp)) })
-      .catch(cb);
+      $.ajax(options)
+      .then(function(resp) { cb(self.parse(resp)) })
+      .done(cb)
+      .catch(cb)
     },
     fetch: function(collection, id, action, cb) {
       if(id === 'new') { return cb({}) }
@@ -65,19 +73,27 @@
         console.warn("Fetch Error: ", err);
       })
     },
-    cache: function(path, cb) {
+    cache: function(collection,id,action,cb) {
       var self = this;
-      if(self._cache[path]) {
-        cb(self._cache[path]);
+      var url = [self.base,collection,id].join('/').replace('//','/');
+      if(self._cache[url]) {
+        if(self._cache[url] === "wait") {
+          setTimeout(function() {
+            self.cache(collection,id,action,cb)
+          }, 1000)
+        } else {
+          cb(self._cache[url]);
+        }
       } else {
-        $.get(self.base+path).then(function(resp) {
-          self._cache[path] = self.parse(resp);
-          cb(self._cache[path]);
-        });
+        self._cache[url] = "wait"
+        self.fetch(collection,id,action,function(resp) {
+          self._cache[url] = resp
+          cb(resp)
+        })
       }
     },
     parse: function(resp, collection) {
-      return resp._items ? resp._items : resp;
+      return resp && resp._items ? resp._items : resp;
     }
   };
 

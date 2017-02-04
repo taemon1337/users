@@ -1,7 +1,7 @@
 FROM python
 
 RUN pip install eve
-RUN pip install docxtpl
+RUN pip install docxtpl faker
 
 COPY ./ /work
 WORKDIR /work

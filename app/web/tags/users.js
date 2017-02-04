@@ -1,6 +1,9 @@
 <users>
   <div class="row">
     <div class="col-xs-12">
+      <div class="pull-right">
+        <button type="button" onclick={ rando } class="btn btn-primary">Generate User</button>
+      </div>
       <h1>Users</h1>
     </div>
 
@@ -9,27 +12,35 @@
 
   <script>
     var self = this
-    this.users = opts.users || []
+    self.users = opts.users || []
 
-    this.headers = opts.headers || {
-      uid: { template: "<a href='/#users/{ uid }'>{ hashColorLabel(uid) }</a>" },
+    self.headers = opts.headers || {
+      id: { template: "<a href='/#users/{ _id }'>{ hashColorLine(_id) }</a>" },
+      username: {},
       name: {}
     }
 
-    this.record_buttons = opts.record_buttons || [
+    self.record_buttons = opts.record_buttons || [
       { text: "Delete", fa: "trash", event: "user:delete" }
     ]
 
-    this.fetch = function(cb) { riot.api.get("/users", cb) }
+    self.fetch = function(cb) { riot.app.fetch("users", null, null, cb) }
 
-    this.on('user:delete', function(record) {
+    self.on('user:delete', function(record) {
       var a = confirm('Are you sure you want to delete User ' + record.name + '?')
       if(a) {
-        riot.api.delete('/users/'+record._id, record, function() {
+        riot.app.delete('users',record, null, function() {
           self.tags['riot-table'].reload()
         })
       }
     })
 
+    self.rando = function() {
+      $.get("/api/fake/profile", function(resp) {
+        riot.app.save("users", resp.profile, null, function() {
+          self.tags['riot-table'].reload()
+        })
+      })
+    }
   </script>
 </users>
