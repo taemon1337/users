@@ -1,20 +1,37 @@
 <groups-edit>
   <div class="row">
     <div class="col-xs-12">
-      <form onsubmit={ save } class="form-horizontal">
-        <form-group label="Id">
-          <input type="text" readonly class="form-control" value={ parent.group._id }>
-        </form-group>
-
-        <form-group label="Name">
+      <form onsubmit={ save } class={ formclass }>
+        <form-group label="Name" columns={ opts.columns }>
           <input onchange={ parent.fieldChange } type="text" class="form-control" placeholder="group name..." name="name" value={ parent.group.name }>
         </form-group>
 
-        <form-group label="Description">
+        <form-group label="Description" columns={ opts.columns }>
           <textarea onchange={ parent.fieldChange } class="form-control" rows=4 name="description" placeholder="enter description...">{ parent.group.description }</textarea>
         </form-group>
 
-        <form-group>
+        <form-group label="Visibility" columns={ opts.columns }>
+          <div class="radio">
+            <label title="everyone can see and join the group">
+              <input type='radio' name="visibility" value="public"  { parent.group.visibility === 'public' ? 'checked' : '' }>
+              public
+            </lable>
+          </div>
+          <div class="radio">
+            <label title="everyone can see, but only those invited can join">
+              <input type='radio' name="visibility" value="private" { parent.group.visibility === 'private' ? 'checked' : '' }>
+              private
+            </lable>
+          </div>
+          <div class="radio">
+            <label title="only members/invited can see the existance of the group">
+              <input type='radio' name="visibility" value="hidden" { parent.group.visibility === 'hidden' ? 'checked' : '' }>
+              hidden
+            </lable>
+          </div>
+        </form-group>
+
+        <form-group columns={ opts.columns }>
           <button type="submit" class="btn btn-primary">Save</button>
           <button onclick={ parent.cancel } type="button" class="btn btn-default">Cancel</button>
         </form-group>
@@ -24,7 +41,8 @@
 
   <script>
     var self = this
-    this.group = opts.group || {}
+    this.formclass = opts.formclass || "form-horizontal"
+    this.group = opts.group || { visibility: 'public' }
 
     this.save = function(e) {
       e.preventDefault()

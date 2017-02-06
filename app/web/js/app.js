@@ -4,17 +4,46 @@
     opts = opts || {};
     riot.observable(this);
     this.base = opts.base || "/api";
+    this.currentUser = JSON.parse(sessionStorage.getItem("currentUser"))
     this._cache = opts._cache || {};
   }
 
   App.prototype = {
+    login: function(collection, user, overrides, cb) {
+      var self = this;
+
+      self.fetch(collection, user.username, null, function(resp) {
+        if(resp) {
+          self.loggedIn(resp, cb)
+        } else {
+          self.save(collection, user, overrides, function(resp) {
+            if(resp) {
+              self.loggedIn(resp, cb)
+            } else {
+              Alert({ status: "danger", title: "Could not login!", body: resp })
+            }
+          })
+        }
+      })
+    },
+    logout: function() {
+      this.currentUser = null;
+      sessionStorage.removeItem("currentUser");
+      location.reload();
+    },
+    loggedIn: function(user, cb) {
+      Alert({ color: "success", title: "Welcome "+user.name, classes: "col-xs-4" })
+      sessionStorage.setItem("currentUser", JSON.stringify(user))
+      this.currentUser = user
+      cb(user)
+    },
     save: function(collection, record, overrides, cb) {
       var self = this;
       var headers = record._id ? { "If-Match": record._etag } : {};
       var data = {};
       Object.keys(record).filter(function(k) { return !k.startsWith("_") }).map(function(k) {
-        if(collection === 'groups' && ['members','managers'].indexOf(k) >= 0) {
-          data[k] = record[k].map(function(usr) { return typeof usr === 'object' ? usr._id : usr })
+        if(['members','groups'].indexOf(k) >= 0) {
+          data[k] = record[k].map(function(rel) { return typeof rel === 'object' ? rel._id : rel })
         } else {
           data[k] = record[k]
         }
@@ -71,6 +100,7 @@
         cb(self.parse(resp, collection));
       }).catch(function(err) {
         console.warn("Fetch Error: ", err);
+        cb(null)
       })
     },
     cache: function(collection,id,action,cb) {

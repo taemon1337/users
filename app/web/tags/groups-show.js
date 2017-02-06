@@ -9,8 +9,8 @@
       <small>{ group.description }</small>
     </h1>
     <hr/>
-    <h3>Profile Fields</h3>
-    <form-tree field="group-fields" object={ group.fields }></form-tree>
+
+    <groups-access-control group={ group }></groups-access-control>
 
   </div>
 

@@ -18,17 +18,6 @@ user_schema = {
     "type": "string",
     "required": True,
     "unique": True
-#  },
-#  "groups": {
-#    "type": "list",
-#    "schema": {
-#      "type": "objectid",
-#      "data_relation": {
-#        "resource": "groups",
-#        "field": "_id",
-#        "embeddable": True
-#      }
-#    }
   }
 }
 group_schema = {
@@ -40,17 +29,10 @@ group_schema = {
   "description": {
     "type": "string"
   },
-  "managers": {
-    "type": "list",
-    "default": [],
-    "schema": {
-      "type": "objectid",
-      "data_relation": {
-        "resource": "users",
-        "field": "_id",
-        "embeddable": True
-      }
-    }
+  "visibility": {
+    "type": "string",
+    "allowed": ["public","private","hidden"],
+    "default": "public"
   },
   "members": {
     "type": "list",
@@ -63,6 +45,30 @@ group_schema = {
         "embeddable": True
       }
     }
+  }
+}
+access_schema = {
+  "resource": {
+    "type": "string",
+    "required": True,
+    "unique": True
+  },
+  "groups": {
+    "type": "list",
+    "default": [],
+    "schema": {
+      "type": "objectid",
+      "data_relation": {
+        "resource": "groups",
+        "field": "_id",
+        "embeddable": True
+      }
+    }
+  },
+  "access": {
+    "type": "list",
+    "allowed": ["create","read","update","delete"],
+    "default": ["read"]
   }
 }
 
@@ -79,14 +85,23 @@ settings = {
   'EXTENDED_MEDIA_INFO': ['name','length','content_type'],
   'MEDIA_ENDPOINT': 'raw',
   'DATE_FORMAT': '%Y-%m-%d %H:%M:%S',
+  'XML': False,
   'DOMAIN': {
     'users': {
+      'additional_lookup': {
+        'url': 'regex("[\w]+")',
+        'field': 'username'
+      },
       'allow_unknown': True,
       'schema': user_schema
     },
     'groups': {
-      'embedded_fields': ["managers","members"],
+      'embedded_fields': ["members"],
       'schema': group_schema
+    },
+    "access": {
+      'embedded_fields': ["groups"],
+      "schema": access_schema
     }
   }
 }

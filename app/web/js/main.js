@@ -1,6 +1,7 @@
 riot.compile(function() {
   var currentTag = null;
   var currentNav = null;
+
   var app = riot.app = new App();
   var tabs = [
     { text: "Users", href: "/users/", url: true },
@@ -18,7 +19,7 @@ riot.compile(function() {
   }
 
   function mount(tag, opts) {
-    mountNavbar({ tabs: "users,groups" })
+    mountNavbar({ tabs: "users,groups", user: app.currentUser, logout: app.logout })
     currentTag && currentTag.unmount(true)
     currentTag = riot.mount('#main', tag, opts)[0]
   }
@@ -41,14 +42,21 @@ riot.compile(function() {
   }
 
   var routes = {
+    login: function(collection, id, action) {
+      mount('login', { url: [collection,id,action].join('/').replace('//','/') })
+    },
     users: resourceHandler,
     groups: resourceHandler
   };
 
   function handler(collection, id, action) {
-    collection = collection || 'users';
-    var fn = routes[collection]
-    fn ? fn(collection, id, action) : console.error("No route found: ", collection, id, action)
+    if(!app.currentUser) {
+      routes.login(collection, id, action)
+    } else {
+      collection = collection || 'users';
+      var fn = routes[collection]
+      fn ? fn(collection, id, action) : console.error("No route found: ", collection, id, action)
+    }
   }
 
   riot.mount('*')

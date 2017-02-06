@@ -8,47 +8,31 @@
           </h3>
         </div>
         <div class="panel-body">
-          <form class="form" onsubmit={ addNew }>
-            <div class="form-group">
-              <label class="control-label">Name</label>
-              <input type="text" name="name" placeholder="group name..." class="form-control">
-            </div>
-            <div class="form-group">
-              <label class="control-label">Description</label>
-              <textarea class="form-control" name="description" rows="4" placeholder="what is the group for..."></textarea>
-            </div>
-            <div class="form-group">
-              <button type="submit" class="btn btn-primary">Add Group</button>
-            </div>
-          </div>
-        </form>
+          <groups-edit formclass="form" group={ { visibility: 'public' } } columns={{ left: '12', center: '12', right: '0 hidden' }}></groups-edit>
+        </div>
       </div>
     </div>
     <div each={ group,index in groups } class="col-xs-12 col-sm-6 col-md-4 col-lg-3">
       <div class="panel panel-default">
         <div class="panel-heading">
-          <div class="pull-right" style="margin-top:-7px;">
+          <div  class="pull-right" style="margin-top:-7px;">
             <select-option default="--add user--" record={ group } onselect={ addUser } fetch={ fetch_users } option_text="name"></select-option>
           </div>
           <h3 class="panel-title">
-            <a href="#/groups/{ group._id }/edit">{ group.name }</a>
+            <a href="#/groups/{ group._id }">{ group.name }</a>
           </h3>
         </div>
         <div class="panel-body">
           <table class="table table-condensed table-striped" style="font-size:10px;">
             <tbody>
-              <tr if={ group.managers.length } each={ user in group.managers }>
-                <td>{ user.username }</td>
-                <td>{ user.name }</td>
-                <td>
-                  <span onclick={ removeUser } class='fa fa-remove'></span>
-                </td>
-              </tr>
               <tr if={ group.members.length } each={ user,uindex in group.members }>
+                <td><span data-gid={ index } ondblclick={ promote } title="double click to make manager" class="fa-2x fa fa-user"></span></td>
                 <td>{ user.username }</td>
                 <td>{ user.name }</td>
                 <td>
-                  <span onclick={ parent.removeUser } group-index={ index } class='fa fa-remove'></span>
+                  <div>
+                    <span onclick={ parent.removeUser } group-index={ index } class='fa fa-remove'></span>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -58,7 +42,7 @@
           <div class="pull-right">
             <span onclick={ remove } class="fa fa-trash text-danger"></span>
           </div>
-          <i>({ group.managers.length } managers, { group.members.length } members)</i>
+          <i>({ group.members.length } members)</i>
         </div>
       </div>
     </div>
@@ -66,19 +50,22 @@
 
   <script>
     var self = this
+    self.currentUser = riot.app.currentUser
     self.groups = opts.groups || []
 
     self.fetch_users = function(cb) { riot.app.cache("users", null, null, cb) }
 
     self.addUser = function(resp) {
-      var ids = resp.record.members.map(function(u) { return u._id })
-      if(ids.indexOf(resp.value) === -1) {
-        resp.record.members.push(resp.option)
-        riot.app.save("groups", resp.record, null, function(res) {
-          for(var key in res) { resp.record[key] = res[key] }
-          self.update()
-          resp.event.target.value = "--add user--"
-        })
+      if(resp.value && resp.value.length === 24) {
+        var ids = resp.record.members.map(function(u) { return u._id })
+        if(ids.indexOf(resp.value) === -1) {
+          resp.record.members.push(resp.option)
+          riot.app.save("groups", resp.record, null, function(res) {
+            for(var key in res) { resp.record[key] = res[key] }
+            self.update()
+            resp.event.target.value = "--add user--"
+          })
+        }
       }
     }
 
@@ -119,9 +106,30 @@
       }
     }
 
+    self.promote = function(e) {
+      var gi = $(e.target).data('gid')
+      var group = self.groups[gi]
+      if(group) {
+        group.members.splice(e.item.uindex,1)
+        group.managers.push(e.item.user)
+        self.update()
+      }
+    }
+
     self.serializeForm = function(form) {
       var r = {}
-      $(form).serializeArray().forEach(function(item) { r[item.name] = item.value })
+      $(form).serializeArray().forEach(function(item) {
+        if(item.name.endsWith("[]")) {
+          var name = item.name.replace('[]','')
+          if(r[name]) {
+            r[name].push(item.value)
+          } else {
+            r[name] = [item.value]
+          }
+        } else {
+          r[item.name] = item.value
+        }
+      })
       return r
     }
   </script>

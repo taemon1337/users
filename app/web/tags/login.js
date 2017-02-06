@@ -6,7 +6,7 @@
         <h1>You must login</h1>
       </form-group>
       <form-group label="Username">
-        <input type="text" class="form-control" name="uid" placeholder="certificate dn...">
+        <input type="text" class="form-control" name="username" placeholder="certificate dn...">
       </form-group>
       <form-group label="Display Name">
         <input type="text" class="form-control" name="name" placeholder='enter name...'>
@@ -20,14 +20,15 @@
 
   <script>
     var self = this
-    this.url = opts.url || '/home'
 
-    this.login = function(e) {
+    self.url = opts.url || "/"
+
+    self.login = function(e) {
       e.preventDefault()
       try {
-        var data = this.get_form_data(e.target);
-        riot.api.login('/users', data, function(resp) {
-          location.reload()
+        var data = self.get_form_data(e.target);
+        riot.app.login('users', data, null, function(user) {
+          riot.route.exec(self.url)
         })
       } catch(err) {
         console.log("ERROR: ", err)
@@ -35,7 +36,7 @@
       }
     }
 
-    this.get_form_data = function(form) {
+    self.get_form_data = function(form) {
       var r = {}
       $(form).serializeArray().forEach(function(arg) {
         r[arg.name] = arg.value
