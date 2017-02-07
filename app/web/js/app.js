@@ -42,8 +42,10 @@
       var headers = record._id ? { "If-Match": record._etag } : {};
       var data = {};
       Object.keys(record).filter(function(k) { return !k.startsWith("_") }).map(function(k) {
-        if(['members','groups'].indexOf(k) >= 0) {
+        if(['groups'].indexOf(k) >= 0) {
           data[k] = record[k].map(function(rel) { return typeof rel === 'object' ? rel._id : rel })
+        } else if(k === 'members') {
+          data[k] = record[k].map(function(rel) { return { user: rel.user._id, role: rel.role }})
         } else {
           data[k] = record[k]
         }

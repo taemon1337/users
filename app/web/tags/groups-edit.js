@@ -10,6 +10,10 @@
           <textarea onchange={ parent.fieldChange } class="form-control" rows=4 name="description" placeholder="enter description...">{ parent.group.description }</textarea>
         </form-group>
 
+        <form-group label="Manager" columns={ opts.columns }>
+          <select-option fetch={ parent.parent.fetch_users } option_text="name" onselect={ parent.managerSelect }></select-option>
+        </form-group>
+
         <form-group label="Visibility" columns={ opts.columns }>
           <div class="radio">
             <label title="everyone can see and join the group">
@@ -41,35 +45,41 @@
 
   <script>
     var self = this
-    this.formclass = opts.formclass || "form-horizontal"
-    this.group = opts.group || { visibility: 'public' }
 
-    this.save = function(e) {
+    self.currentUser = riot.app.currentUser
+    self.formclass = opts.formclass || "form-horizontal"
+    self.group = opts.group || { visibility: 'public', members: [{ user: self.currentUser, role: "manager" }] }
+
+    self.save = function(e) {
       e.preventDefault()
       riot.app.save("groups", self.group, null, function(record) {
-        console.log("SAVED: ", record)
         self.update({ group: record })
+        self.trigger("form:saved")
       })
     }
 
-    this.fieldChange = function(e) {
+    self.managerSelect = function(res) {
+      self.group.members = [{ user: res.option, role: "manager" }]
+    }
+
+    self.fieldChange = function(e) {
       self.group[e.target.name] = $(e.target).val()
       self.update({ group: self.group })
     }
 
-    this.addField = function(e) {
+    self.addField = function(e) {
       var input = $(e.target).parents('.input-group').find('input')
       self.tags['key-value-inputs'].trigger('add', { key: input.val() })
       setTimeout(function() { input.val('') }, 900)
     }
 
-    this.on('fields:changed', function(data) {
+    self.on('fields:changed', function(data) {
       if(data.fields) {
         self.group.fields = data.fields
       }
     })
 
-    this.cancel = function() {
+    self.cancel = function() {
       window.history.back()
     }
   </script>

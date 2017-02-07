@@ -17,13 +17,5 @@
   <script>
     var self = this
     self.group = opts.group
-
-    self.on('tree:change', function(data) {
-      self.group.fields = data.object
-      riot.app.save("groups", self.group, { method: "PUT" }, function(resp) {
-        for(var key in resp) { self.group[key] = resp[key] }
-        self.update({ group: self.group })
-      })
-    })
   </script>
 </groups-show>

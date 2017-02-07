@@ -19,7 +19,7 @@ riot.compile(function() {
   }
 
   function mount(tag, opts) {
-    mountNavbar({ tabs: "users,groups", user: app.currentUser, logout: app.logout })
+    mountNavbar({ tabs: "users,groups,access", user: app.currentUser, logout: app.logout })
     currentTag && currentTag.unmount(true)
     currentTag = riot.mount('#main', tag, opts)[0]
   }
@@ -31,7 +31,7 @@ riot.compile(function() {
    * /users/new     ->  mount('users-new', { user: {} })
    */
   function resourceHandler(collection, id, action) {
-    var singular = collection.slice(0,-1);
+    var singular = collection.endsWith("s") ? collection : collection.slice(0,-1);
     var opts = {};
     var tag = id ? [collection,action || 'show'].join('-') : collection;
 
@@ -46,7 +46,8 @@ riot.compile(function() {
       mount('login', { url: [collection,id,action].join('/').replace('//','/') })
     },
     users: resourceHandler,
-    groups: resourceHandler
+    groups: resourceHandler,
+    access: resourceHandler
   };
 
   function handler(collection, id, action) {

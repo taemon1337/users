@@ -9,18 +9,6 @@ MONGO_HOST = getenv("MONGO_HOST","mongo")
 MONGO_PORT = int(getenv("MONGO_PORT", "27017"))
 MONGO_DBNAME = getenv("MONGO_DBNAME","user-db")
 
-master_schema = {
-  "masters": {
-    "type": "list",
-    "schema": {
-      "type": "objectid",
-      "data_relation": {
-        "resource": "groups",
-        "field": "_id"
-      }
-    }
-  }
-}
 user_schema = {
   "username": {
     "type": "string",
@@ -111,11 +99,6 @@ settings = {
   'DATE_FORMAT': '%Y-%m-%d %H:%M:%S',
   'XML': False,
   'DOMAIN': {
-    'masters': {
-      'resource_methods': [],
-      'item_methods': [],
-      'schema': master_schema
-    },
     'users': {
       'additional_lookup': {
         'url': 'regex("[\w]+")',
@@ -137,10 +120,9 @@ settings = {
 
 app = Eve(settings=settings)
 app.faker = Faker()
-app.master_group = ""
 
 # CRUD access control callbacks
-app.on_inserted         += AccessControl.setMaster
+app.on_insert_groups    += AccessControl.master
 app.on_insert           += AccessControl.create
 app.on_fetched_resource += AccessControl.read
 app.on_replace          += AccessControl.update
@@ -169,11 +151,6 @@ def can(username, permission, resource,resource_id=None):
   return jsonify({ "can": False })
 
 
-@app.route("/api/master", methods=["GET"])
-def get_master():
-  return app.master_group
-
-
 @app.route('/api/fake/<name>')
 def faker(name):
   if hasattr(app.faker, name):
@@ -183,13 +160,6 @@ def faker(name):
   else:
     return None
 
-# Set first group to be master
-with app.app_context():
-  groups = app.data.driver.db["groups"]
-  if groups.count() > 0:
-    first = groups.find_one()
-    if first:
-      app.master_group = first["name"]
 
 if __name__ == "__main__":
   host = getenv("HOST","0.0.0.0")

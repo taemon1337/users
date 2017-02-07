@@ -6,14 +6,18 @@
           <input onchange={ parent.fieldChange } type="text" class="form-control" placeholder="i.e users..." name="resource" value={ parent.access.resource }>
         </form-group>
 
+        <form-group label="Resource Id">
+          <input class="form-control" onchange={ parent.fieldChange } name="resource_id" type='text' name="resource id..." value={ parent.access.resource_id }>
+        </form-group>
+
         <form-group label="Groups">
           <multiselect record={ parent.access } field="groups" value={ parent.access.groups } fetch={ parent.fetch_groups } text_field="name"></multiselect>
         </form-group>
 
-        <form-group label="Access">
+        <form-group label="Permissions">
           <div each={ option in ['create','read','update','delete'] } class="checkbox">
             <label>
-              <input onchange={ parent.parent.fieldChange } type='checkbox' name="access" value={ option }>{ option }
+              <input onchange={ parent.parent.fieldChange } type='checkbox' name="permissions" value={ option }>{ option }
             </label>
           </div>
         </form-group>
@@ -47,10 +51,9 @@
     }
 
     self.fieldChange = function(e) {
-      window.e = e
       var field = e.target.name
       var val = e.target.value
-      if(field === 'access') {
+      if(field === 'permissions') {
         var tmp = []
         $(e.target).parents(".form-group").find("input[type=checkbox]:checked")
         .each(function(i,item) { tmp.push( $(item).val() ) })
