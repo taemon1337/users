@@ -3,7 +3,7 @@ from flask import current_app, Response, send_file, jsonify
 from os import getenv
 from faker import Faker
 from bson.objectid import ObjectId
-from access_control import AccessControl, find_access_group
+from access_control import AccessControl, find_access_group, access_control_startup 
 
 MONGO_HOST = getenv("MONGO_HOST","mongo")
 MONGO_PORT = int(getenv("MONGO_PORT", "27017"))
@@ -137,7 +137,11 @@ settings = {
 }
 
 def create_user_group(items):
+  users = app.data.driver.db["users"]
   groups = app.data.driver.db["groups"]
+
+  if users.count() == 1:
+    groups.update_one({ "name": "admins" },{ "$set": { "members": [{ "user": items[0]["_id"], "role": "manager" }] }})
 
   for user in items:
     if user["username"] and user["_id"]:
@@ -146,7 +150,6 @@ def create_user_group(items):
 
 app = Eve(settings=settings)
 app.faker = Faker()
-app.master_group = ""
 
 # CRUD access control callbacks
 app.on_inserted         += AccessControl.setMaster
@@ -181,11 +184,6 @@ def can(username, permission, resource,resource_id=""):
   return jsonify({ "can": False })
 
 
-@app.route("/api/master", methods=["GET"])
-def get_master():
-  return app.master_group
-
-
 @app.route('/api/fake/<name>')
 def faker(name):
   if hasattr(app.faker, name):
@@ -197,11 +195,7 @@ def faker(name):
 
 # Set first group to be master
 with app.app_context():
-  groups = app.data.driver.db["groups"]
-  if groups.count() > 0:
-    first = groups.find_one()
-    if first:
-      app.master_group = first["name"]
+  access_control_startup()
 
 if __name__ == "__main__":
   host = getenv("HOST","0.0.0.0")

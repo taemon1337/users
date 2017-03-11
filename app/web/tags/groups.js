@@ -64,8 +64,9 @@
 
   <script>
     var self = this
+
     self.currentUser = riot.app.currentUser
-    self.groups = opts.groups || []
+    self.groups = (opts.groups || []).filter(function(g) { return g.visibility !== 'hidden' })
 
     self.fetch_users = function(cb) { riot.app.cache("users", null, null, cb) }
 

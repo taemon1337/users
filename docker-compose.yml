@@ -11,6 +11,8 @@ services:
     command: python -u run.py
     networks:
       - working
+    depends_on:
+      - mongo
   app:
     build: ./app
     volumes:
