@@ -3,24 +3,12 @@ from flask import current_app, Response, send_file, jsonify
 from os import getenv
 from faker import Faker
 from bson.objectid import ObjectId
-from access_control import AccessControl, find_access_group, access_control_startup 
+from access_control import AccessControl, access_control_can, access_control_startup 
 
 MONGO_HOST = getenv("MONGO_HOST","mongo")
 MONGO_PORT = int(getenv("MONGO_PORT", "27017"))
 MONGO_DBNAME = getenv("MONGO_DBNAME","user-db")
 
-master_schema = {
-  "masters": {
-    "type": "list",
-    "schema": {
-      "type": "objectid",
-      "data_relation": {
-        "resource": "groups",
-        "field": "_id"
-      }
-    }
-  }
-}
 user_schema = {
   "username": {
     "type": "string",
@@ -112,11 +100,6 @@ settings = {
   'DATE_FORMAT': '%Y-%m-%d %H:%M:%S',
   'XML': False,
   'DOMAIN': {
-    'masters': {
-      'resource_methods': [],
-      'item_methods': [],
-      'schema': master_schema
-    },
     'users': {
       'additional_lookup': {
         'url': 'regex("[\w]+")',
@@ -152,7 +135,6 @@ app = Eve(settings=settings)
 app.faker = Faker()
 
 # CRUD access control callbacks
-app.on_inserted         += AccessControl.setMaster
 app.on_insert           += AccessControl.create
 app.on_fetched_resource += AccessControl.read
 app.on_replace          += AccessControl.update
@@ -173,16 +155,23 @@ app.on_inserted_users += create_user_group
 @app.route("/api/can/<username>/<permission>/<resource>")
 @app.route("/api/can/<username>/<permission>/<resource>/<resource_id>")
 def can(username, permission, resource,resource_id=""):
-  accesses = app.data.driver.db["access"]
-  app.logger.info("CAN: " + username + " " + permission + " " + resource + " " + resource_id)
+  group = access_control_can(username, permission, resource, resource_id)
+  if group:
+    return jsonify({ "can": True, "group": group })
+  else:
+    return jsonify({ "can": False })
 
-  access_list = accesses.find({ "resource": resource })
-  for access in access_list:
-    access_group = find_access_group(username, permission, access, resource_id=resource_id)
-    if access_group:
-      return jsonify({ "can": True, "group": access_group["name"] })
-  return jsonify({ "can": False })
-
+@app.route("/api/ask/<username>/<resource>")
+@app.route("/api/ask/<username>/<resource>/<resource_id>")
+def ask(username, resource, resource_id=""):
+  perms = []
+  groups = {}
+  for perm in ["create","read","update","delete"]:
+    group = access_control_can(username, perm, resource, resource_id)
+    if group:
+      groups[perm] = group
+      perms.append(perm)
+  return jsonify({ "permissions": perms, "groups": groups })
 
 @app.route('/api/fake/<name>')
 def faker(name):
@@ -193,7 +182,6 @@ def faker(name):
   else:
     return None
 
-# Set first group to be master
 with app.app_context():
   access_control_startup()
 

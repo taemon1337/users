@@ -16,7 +16,6 @@ def access_control_startup():
     accesses.insert_one({ "resource": "users", "resource_id": "", "permissions": ["create","read","update","delete"], "groups": [admin.inserted_id] })
     accesses.insert_one({ "resource": "users", "resource_id": "", "permissions": ["create","read"], "groups": [everyone.inserted_id] })
 
-
 def find_access_group(username, permission, access, resource_id=""):
   res_id = access['resource_id'] if 'resource_id' in access else ''
   users = app.data.driver.db["users"]
@@ -41,14 +40,19 @@ def find_access_group(username, permission, access, resource_id=""):
     raise Exception("Invalid Access: missing 'groups' or 'permissions' key!")
 
 
+def access_control_can(username, permission, resource, resource_id=""):
+  accesses = app.data.driver.db["access"]
+  app.logger.info("CAN: " + username + " " + permission + " " + resource + " " + resource_id)
+
+  access_list = accesses.find({ "resource": resource })
+  for access in access_list:
+    access_group = find_access_group(username, permission, access, resource_id=resource_id)
+    if access_group:
+      return access_group["name"]
+  return False
+
+
 class AccessControl:
-
-  @classmethod
-  def setMaster(cls, resource, items):
-    groups = app.data.driver.db["groups"]
-
-    if resource == "groups" and groups.count() == 1:
-      app.master_group = items[0]["name"]
 
   @classmethod
   def GET(cls, resource, req, lookup):

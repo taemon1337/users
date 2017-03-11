@@ -64,15 +64,16 @@
 
   <script>
     var self = this
+    var not_hidden = function(g) { return g.visibility !== 'hidden' }
 
     self.currentUser = riot.app.currentUser
-    self.groups = (opts.groups || []).filter(function(g) { return g.visibility !== 'hidden' })
+    self.groups = (opts.groups || []).filter(not_hidden)
 
     self.fetch_users = function(cb) { riot.app.cache("users", null, null, cb) }
 
     self.reload = function() {
       riot.app.fetch("groups", null, null, function(groups) {
-        self.update({ groups: groups })
+        self.update({ groups: groups.filter(not_hidden) })
       })
     }
 
