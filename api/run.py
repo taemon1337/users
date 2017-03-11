@@ -75,7 +75,8 @@ access_schema = {
     "required": True
   },
   "resource_id": {
-    "type": "string"
+    "type": "string",
+    "default": ""
   },
   "groups": {
     "type": "list",
@@ -135,6 +136,14 @@ settings = {
   }
 }
 
+def create_user_group(items):
+  groups = app.data.driver.db["groups"]
+
+  for user in items:
+    if user["username"] and user["_id"]:
+      groups.insert_one({ "name": user["username"], "description": "default user group", "visibility": "hidden", "members": [{ "user": user["_id"], "role": "manager"  }] })
+
+
 app = Eve(settings=settings)
 app.faker = Faker()
 app.master_group = ""
@@ -153,17 +162,20 @@ app.on_pre_GET    += AccessControl.GET
 #app.on_pre_PUT    += AccessControl.update
 #app.on_pre_DELETE += AccessControl.delete
 
+app.on_inserted_users += create_user_group
+
 
 # I.E GET /api/can/ts1222/read/users
 # I.E GET /api/can/ts1222/update/users/ts1222
 @app.route("/api/can/<username>/<permission>/<resource>")
 @app.route("/api/can/<username>/<permission>/<resource>/<resource_id>")
-def can(username, permission, resource,resource_id=None):
+def can(username, permission, resource,resource_id=""):
   accesses = app.data.driver.db["access"]
+  app.logger.info("CAN: " + username + " " + permission + " " + resource + " " + resource_id)
 
-  access_list = accesses.find({ "resource": resource, "resource_id": resource_id })
+  access_list = accesses.find({ "resource": resource })
   for access in access_list:
-    access_group = find_access_group(username, permission, access)
+    access_group = find_access_group(username, permission, access, resource_id=resource_id)
     if access_group:
       return jsonify({ "can": True, "group": access_group["name"] })
   return jsonify({ "can": False })

@@ -19,7 +19,7 @@ riot.compile(function() {
   }
 
   function mount(tag, opts) {
-    mountNavbar({ tabs: "users,groups,access", user: app.currentUser, logout: app.logout })
+    mountNavbar({ tabs: "users,groups,access,test", user: app.currentUser, logout: app.logout })
     currentTag && currentTag.unmount(true)
     currentTag = riot.mount('#main', tag, opts)[0]
   }
@@ -47,7 +47,10 @@ riot.compile(function() {
     },
     users: resourceHandler,
     groups: resourceHandler,
-    access: resourceHandler
+    access: resourceHandler,
+    test: function(collection, id, action) {
+      mount('test-access');
+    }
   };
 
   function handler(collection, id, action) {

@@ -1,20 +1,21 @@
 from flask import current_app as app
 
 
-def find_access_group(username, permission, access):
+def find_access_group(username, permission, access, resource_id=""):
   users = app.data.driver.db["users"]
   groups = app.data.driver.db["groups"]
 
   if access["groups"] and access["permissions"]:
-    for groupid in access["groups"]:
-      group = groups.find_one({ "_id": groupid })
-      if group:
-        for member in group["members"]:
-          user = users.find_one({ "_id": member["user"] })
-          if user:
-            if user["username"] == username:
-              if permission in access["permissions"]:
-                return group
+    if access["resource_id"] is "" or access["resource_id"] is resource_id:
+      for groupid in access["groups"]:
+        group = groups.find_one({ "_id": groupid })
+        if group:
+          for member in group["members"]:
+            user = users.find_one({ "_id": member["user"] })
+            if user:
+              if user["username"] == username:
+                if permission in access["permissions"]:
+                  return group
     return False
   else:
     raise Exception("Invalid Access: missing 'groups' or 'permissions' key!")
