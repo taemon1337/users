@@ -1,8 +1,10 @@
-from flask import current_app as app
+from flask import current_app as app, abort
 from time import sleep
 
 def access_control_startup():
-  sleep(5)
+  sleep(3)
+  adminid = None
+  everyoneid = None
   users = app.data.driver.db["users"]
   groups = app.data.driver.db["groups"]
   accesses = app.data.driver.db["access"]
@@ -10,11 +12,20 @@ def access_control_startup():
   if groups.count() < 1:
     everyone = groups.insert_one({ "name": "everyone", "description": "everyone is in everyone group", "visibility": "hidden", "members": [] })
     admin = groups.insert_one({ "name": "admins", "description": "default admins group", "visibility": "public", "members": [] })
+    everyoneid = everyone.inserted_id
+    adminid = admin.inserted_id
 
   if accesses.count() < 1:
-    accesses.insert_one({ "resource": "access", "resource_id": "", "permissions": ["create","read","update","delete"], "groups": [admin.inserted_id] })
-    accesses.insert_one({ "resource": "users", "resource_id": "", "permissions": ["create","read","update","delete"], "groups": [admin.inserted_id] })
-    accesses.insert_one({ "resource": "users", "resource_id": "", "permissions": ["create","read"], "groups": [everyone.inserted_id] })
+    if adminid is None:
+      admin = groups.find_one({ "name": "admins" })
+      adminid = admin["_id"]
+    if everyoneid is None:
+      everyone = groups.find_one({ "name": "everyone" })
+      everyoneid = everyone["_id"]
+    accesses.insert_one({ "resource": "access", "resource_id": "", "permissions": ["create","read","update","delete"], "groups": [adminid] })
+    accesses.insert_one({ "resource": "groups", "resource_id": "", "permissions": ["create","read","update","delete"], "groups": [adminid] })
+    accesses.insert_one({ "resource": "users", "resource_id": "", "permissions": ["create","read","update","delete"], "groups": [adminid] })
+    accesses.insert_one({ "resource": "users", "resource_id": "", "permissions": ["create","read"], "groups": [everyoneid] })
 
 def find_access_group(username, permission, access, resource_id=""):
   res_id = access['resource_id'] if 'resource_id' in access else ''
@@ -67,7 +78,8 @@ class AccessControl:
     resource_id = parsed[2] if len(parsed) > 2 else ""
     if parsed[0] == 'api':
       if not access_control_can(username, 'read', resource, resource_id):
-        raise Exception("Permission Denied: " + username + " cannot read " + resource + " " + resource_id)
+        msg = "Permission Denied: " + username + " cannot read " + resource + " " + resource_id
+        abort(400,msg)
     
 
   @classmethod
