@@ -31,7 +31,7 @@ riot.compile(function() {
    * /users/new     ->  mount('users-new', { user: {} })
    */
   function resourceHandler(collection, id, action) {
-    var singular = collection.endsWith("s") ? collection : collection.slice(0,-1);
+    var singular = collection.slice(0,-1);
     var opts = {};
     var tag = id ? [collection,action || 'show'].join('-') : collection;
 

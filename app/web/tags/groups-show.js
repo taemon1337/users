@@ -9,9 +9,6 @@
       <small>{ group.description }</small>
     </h1>
     <hr/>
-
-    <groups-access-control group={ group }></groups-access-control>
-
   </div>
 
   <script>

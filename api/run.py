@@ -135,11 +135,11 @@ app = Eve(settings=settings)
 app.faker = Faker()
 
 # CRUD access control callbacks
-app.on_insert           += AccessControl.create
-app.on_fetched_resource += AccessControl.read
-app.on_replace          += AccessControl.update
-app.on_update           += AccessControl.update
-app.on_deleted_item     += AccessControl.delete
+#app.on_insert           += AccessControl.create
+#app.on_fetched_resource += AccessControl.read
+#app.on_replace          += AccessControl.update
+#app.on_update           += AccessControl.update
+#app.on_deleted_item     += AccessControl.delete
 
 #app.on_pre_POST   += AccessControl.create
 app.on_pre_GET    += AccessControl.GET

@@ -6,6 +6,10 @@
     this.base = opts.base || "/api";
     this.currentUser = JSON.parse(sessionStorage.getItem("currentUser"))
     this._cache = opts._cache || {};
+
+    if(this.currentUser) {
+      $.ajaxSetup({ headers: { 'CurrentUser': this.currentUser.username }});
+    }
   }
 
   App.prototype = {
@@ -35,6 +39,8 @@
       Alert({ color: "success", title: "Welcome "+user.name, classes: "col-xs-4" })
       sessionStorage.setItem("currentUser", JSON.stringify(user))
       this.currentUser = user
+      $.ajaxSetup({ headers: { 'CurrentUser': this.currentUser.username }});
+
       cb(user)
     },
     save: function(collection, record, overrides, cb) {

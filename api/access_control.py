@@ -52,14 +52,23 @@ def access_control_can(username, permission, resource, resource_id=""):
   return False
 
 
+def parse_username(req):
+  return req.headers['CurrentUser'] if req.headers.has_key('CurrentUser') else ""
+
+
 class AccessControl:
 
   @classmethod
   def GET(cls, resource, req, lookup):
     parsed = req.path.split('/')
+    parsed.remove('')
+    username = parse_username(req)
+    resource = parsed[1] if len(parsed) > 1 else ""
+    resource_id = parsed[2] if len(parsed) > 2 else ""
+    if parsed[0] == 'api':
+      if not access_control_can(username, 'read', resource, resource_id):
+        raise Exception("Permission Denied: " + username + " cannot read " + resource + " " + resource_id)
     
-    app.logger.info("READING " + resource)
-    return False
 
   @classmethod
   def create(cls, resource, items):
