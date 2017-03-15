@@ -71,6 +71,18 @@ class AccessControl:
 
   @classmethod
   def GET(cls, resource, req, lookup):
+    users = app.data.driver.db["users"]
+    groups = app.data.driver.db["groups"]
+
+    user = users.find_one({ "username": parse_username(req) })
+    if user:
+      if resource == 'groups':
+        is_admin = groups.find_one({ "name": "admins", "members.user": user["_id"] })
+        lookup["visibility"] = { "$in": ["public","private"] }
+        if not is_admin:
+          lookup["members.user"] = user["_id"]
+
+  def guardGET(cls, resource, req, lookup):
     parsed = req.path.split('/')
     parsed.remove('')
     username = parse_username(req)
